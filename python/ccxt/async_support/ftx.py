@@ -2555,7 +2555,7 @@ class ftx(Exchange):
                                             "GET orders/{order_id}"]:
                 api = "private_bypass"
 
-        # print(" -----> ", path, api, method, params)
+        print(" -----> ", path, api, method, params)
         signOptions = self.safe_value(self.options, 'sign', {})
         headerPrefix = self.safe_string(signOptions, self.hostname, 'FTX')
         subaccountField = headerPrefix + '-SUBACCOUNT'
