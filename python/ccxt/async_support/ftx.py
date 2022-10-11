@@ -2555,7 +2555,6 @@ class ftx(Exchange):
                                             "GET orders/{order_id}"]:
                 api = "private_bypass"
 
-        print(" -----> ", path, api, method, params)
         signOptions = self.safe_value(self.options, 'sign', {})
         headerPrefix = self.safe_string(signOptions, self.hostname, 'FTX')
         subaccountField = headerPrefix + '-SUBACCOUNT'
@@ -2568,6 +2567,8 @@ class ftx(Exchange):
             baseUrl = self.implode_hostname_bypass(self.urls['api'][api])
         else:
             baseUrl = self.implode_hostname(self.urls['api'][api])
+
+        print(" -----> ", api, baseUrl, path, method, params)
 
         url = baseUrl + request
         if method != 'POST':
