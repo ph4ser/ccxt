@@ -38,12 +38,14 @@ class ftx(Exchange):
             'certified': True,
             'pro': True,
             'hostname': 'ftx.com',  # or ftx.us
+            'hostname_bypass': 'api.ftx.com',
             'urls': {
                 'logo': 'https://user-images.githubusercontent.com/1294454/67149189-df896480-f2b0-11e9-8816-41593e17f9ec.jpg',
                 'www': 'https://ftx.com',
                 'api': {
                     'public': 'https://{hostname}',
                     'private': 'https://{hostname}',
+                    'private_bypass': 'https://{hostname_bypass}',
                 },
                 'doc': 'https://github.com/ftexchange/ftx',
                 'fees': 'https://ftexchange.zendesk.com/hc/en-us/articles/360024479432-Fees',
@@ -2544,6 +2546,12 @@ class ftx(Exchange):
 
     def sign(self, path, api='public', method='GET', params={}, headers=None, body=None):
         request = '/api/' + self.implode_params(path, params)
+        if api == "private":
+            if " ".join([method, path]) in ["POST orders", 
+                                            "DELETE orders/by_client_id/{client_order_id}",
+                                            "DELETE orders/{order_id}",
+                                            "GET orders/{order_id}"]:
+                api = "private_bypass"
         signOptions = self.safe_value(self.options, 'sign', {})
         headerPrefix = self.safe_string(signOptions, self.hostname, 'FTX')
         subaccountField = headerPrefix + '-SUBACCOUNT'
@@ -2558,7 +2566,7 @@ class ftx(Exchange):
                 suffix = '?' + self.urlencode(query)
                 url += suffix
                 request += suffix
-        if api == 'private':
+        if api in ['private_bypass', 'private']:
             self.check_required_credentials()
             timestamp = str(self.milliseconds())
             auth = timestamp + method + request
