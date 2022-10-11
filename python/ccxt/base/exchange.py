@@ -3031,6 +3031,9 @@ class Exchange(object):
     def implode_hostname(self, url):
         return self.implode_params(url, {'hostname': self.hostname})
 
+    def implode_hostname_bypass(self, url):
+        return self.implode_params(url, {'hostname_bypass': self.hostname_bypass})
+
     def fetch_market_leverage_tiers(self, symbol, params={}):
         if self.has['fetchLeverageTiers']:
             market = self.market(symbol)

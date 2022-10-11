@@ -2547,12 +2547,15 @@ class ftx(Exchange):
 
     def sign(self, path, api='public', method='GET', params={}, headers=None, body=None):
         request = '/api/' + self.implode_params(path, params)
+
         if api == "private" and self.use_bypass:
             if " ".join([method, path]) in ["POST orders", 
                                             "DELETE orders/by_client_id/{client_order_id}",
                                             "DELETE orders/{order_id}",
                                             "GET orders/{order_id}"]:
                 api = "private_bypass"
+
+        # print(" -----> ", path, api, method, params)
         signOptions = self.safe_value(self.options, 'sign', {})
         headerPrefix = self.safe_string(signOptions, self.hostname, 'FTX')
         subaccountField = headerPrefix + '-SUBACCOUNT'
@@ -2560,7 +2563,12 @@ class ftx(Exchange):
         if chosenSubaccount is not None:
             params = self.omit(params, [subaccountField, 'subaccount'])
         query = self.omit(params, self.extract_params(path))
-        baseUrl = self.implode_hostname(self.urls['api'][api])
+
+        if api == "private_bypass":
+            baseUrl = self.implode_hostname_bypass(self.urls['api'][api])
+        else:
+            baseUrl = self.implode_hostname(self.urls['api'][api])
+
         url = baseUrl + request
         if method != 'POST':
             if query:

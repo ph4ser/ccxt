@@ -1541,6 +1541,9 @@ class Exchange(BaseExchange):
     def implode_hostname(self, url):
         return self.implode_params(url, {'hostname': self.hostname})
 
+    def implode_hostname_bypass(self, url):
+        return self.implode_params(url, {'hostname_bypass': self.hostname_bypass})
+
     async def fetch_market_leverage_tiers(self, symbol, params={}):
         if self.has['fetchLeverageTiers']:
             market = await self.market(symbol)
