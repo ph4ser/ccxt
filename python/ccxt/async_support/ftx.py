@@ -2568,7 +2568,7 @@ class ftx(Exchange):
         else:
             baseUrl = self.implode_hostname(self.urls['api'][api])
 
-        print(" -----> ", api, baseUrl, path, method, params)
+        # print(" -----> ", api, baseUrl, path, method, params)
 
         url = baseUrl + request
         if method != 'POST':
