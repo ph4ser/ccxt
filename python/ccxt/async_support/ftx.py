@@ -37,6 +37,7 @@ class ftx(Exchange):
             'rateLimit': 28.57,
             'certified': True,
             'pro': True,
+            'use_bypass': False,
             'hostname': 'ftx.com',  # or ftx.us
             'hostname_bypass': 'api.ftx.com',
             'urls': {
@@ -2546,7 +2547,7 @@ class ftx(Exchange):
 
     def sign(self, path, api='public', method='GET', params={}, headers=None, body=None):
         request = '/api/' + self.implode_params(path, params)
-        if api == "private":
+        if api == "private" and self.use_bypass:
             if " ".join([method, path]) in ["POST orders", 
                                             "DELETE orders/by_client_id/{client_order_id}",
                                             "DELETE orders/{order_id}",
