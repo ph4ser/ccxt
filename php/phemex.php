@@ -400,7 +400,7 @@ class phemex extends Exchange {
                 'defaultSubType' => 'linear',
                 'accountsByType' => array(
                     'spot' => 'spot',
-                    'future' => 'future',
+                    'swap' => 'future',
                 ),
                 'transfer' => array(
                     'fillResponseFromRequest' => true,
@@ -774,7 +774,7 @@ class phemex extends Exchange {
         for ($i = 0; $i < count($products); $i++) {
             $market = $products[$i];
             $type = $this->safe_string_lower($market, 'type');
-            if ($type === 'perpetual') {
+            if (($type === 'perpetual') || ($type === 'perpetualv2')) {
                 $id = $this->safe_string($market, 'symbol');
                 $riskLimitValues = $this->safe_value($riskLimitsById, $id, array());
                 $market = array_merge($market, $riskLimitValues);
@@ -1988,7 +1988,10 @@ class phemex extends Exchange {
                 $params = $this->omit($params, 'cost');
                 if ($this->options['createOrderByQuoteRequiresPrice']) {
                     if ($price !== null) {
-                        $cost = $amount * $price;
+                        $amountString = $this->number_to_string($amount);
+                        $priceString = $this->number_to_string($price);
+                        $quoteAmount = Precise::string_mul($amountString, $priceString);
+                        $cost = $this->parse_number($quoteAmount);
                     } elseif ($cost === null) {
                         throw new ArgumentsRequired($this->id . ' createOrder() ' . $qtyType . ' requires a $price argument or a $cost parameter');
                     }
@@ -2890,7 +2893,10 @@ class phemex extends Exchange {
         $leverage = $this->safe_number($position, 'leverage');
         $entryPriceString = $this->safe_string($position, 'avgEntryPrice');
         $rawSide = $this->safe_string($position, 'side');
-        $side = ($rawSide === 'Buy') ? 'long' : 'short';
+        $side = null;
+        if ($rawSide !== null) {
+            $side = ($rawSide === 'Buy') ? 'long' : 'short';
+        }
         $priceDiff = null;
         $currency = $this->safe_string($position, 'currency');
         if ($currency === 'USD') {
@@ -3378,6 +3384,7 @@ class phemex extends Exchange {
          * @param {string} $fromAccount account to $transfer from
          * @param {string} $toAccount account to $transfer to
          * @param {array} $params extra parameters specific to the phemex api endpoint
+         * @param {string|null} $params->bizType for transferring between main and sub-acounts either 'SPOT' or 'PERPETUAL' default is 'SPOT'
          * @return {array} a {@link https://docs.ccxt.com/en/latest/manual.html#$transfer-structure $transfer structure}
          */
         $this->load_markets();

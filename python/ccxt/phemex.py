@@ -415,7 +415,7 @@ class phemex(Exchange):
                 'defaultSubType': 'linear',
                 'accountsByType': {
                     'spot': 'spot',
-                    'future': 'future',
+                    'swap': 'future',
                 },
                 'transfer': {
                     'fillResponseFromRequest': True,
@@ -782,7 +782,7 @@ class phemex(Exchange):
         for i in range(0, len(products)):
             market = products[i]
             type = self.safe_string_lower(market, 'type')
-            if type == 'perpetual':
+            if (type == 'perpetual') or (type == 'perpetualv2'):
                 id = self.safe_string(market, 'symbol')
                 riskLimitValues = self.safe_value(riskLimitsById, id, {})
                 market = self.extend(market, riskLimitValues)
@@ -1929,7 +1929,10 @@ class phemex(Exchange):
                 params = self.omit(params, 'cost')
                 if self.options['createOrderByQuoteRequiresPrice']:
                     if price is not None:
-                        cost = amount * price
+                        amountString = self.number_to_string(amount)
+                        priceString = self.number_to_string(price)
+                        quoteAmount = Precise.string_mul(amountString, priceString)
+                        cost = self.parse_number(quoteAmount)
                     elif cost is None:
                         raise ArgumentsRequired(self.id + ' createOrder() ' + qtyType + ' requires a price argument or a cost parameter')
                 cost = amount if (cost is None) else cost
@@ -2771,7 +2774,9 @@ class phemex(Exchange):
         leverage = self.safe_number(position, 'leverage')
         entryPriceString = self.safe_string(position, 'avgEntryPrice')
         rawSide = self.safe_string(position, 'side')
-        side = 'long' if (rawSide == 'Buy') else 'short'
+        side = None
+        if rawSide is not None:
+            side = 'long' if (rawSide == 'Buy') else 'short'
         priceDiff = None
         currency = self.safe_string(position, 'currency')
         if currency == 'USD':
@@ -3227,6 +3232,7 @@ class phemex(Exchange):
         :param str fromAccount: account to transfer from
         :param str toAccount: account to transfer to
         :param dict params: extra parameters specific to the phemex api endpoint
+        :param str|None params['bizType']: for transferring between main and sub-acounts either 'SPOT' or 'PERPETUAL' default is 'SPOT'
         :returns dict: a `transfer structure <https://docs.ccxt.com/en/latest/manual.html#transfer-structure>`
         """
         self.load_markets()

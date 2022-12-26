@@ -913,7 +913,7 @@ class bitfinex2 extends Exchange {
             'timestamp' => $timestamp,
             'datetime' => $this->iso8601($timestamp),
             'status' => $this->parse_transfer_status($status),
-            'amount' => $this->safe_number($transfer, 7),
+            'amount' => $this->safe_number($info, 7),
             'currency' => $this->safe_currency_code($currencyId, $currency),
             'fromAccount' => $fromAccount,
             'toAccount' => $toAccount,
@@ -2060,15 +2060,17 @@ class bitfinex2 extends Exchange {
         $feeCost = null;
         $txid = null;
         $addressTo = null;
+        $network = null;
+        $comment = null;
         if ($transactionLength === 8) {
             $data = $this->safe_value($transaction, 4, array());
             $timestamp = $this->safe_integer($transaction, 0);
             if ($currency !== null) {
                 $code = $currency['code'];
             }
-            $feeCost = $this->safe_number($data, 8);
+            $feeCost = $this->safe_string($data, 8);
             if ($feeCost !== null) {
-                $feeCost = -$feeCost;
+                $feeCost = Precise::string_abs($feeCost);
             }
             $amount = $this->safe_number($data, 5);
             $id = $this->safe_value($data, 0);
@@ -2083,45 +2085,50 @@ class bitfinex2 extends Exchange {
             $id = $this->safe_string($transaction, 0);
             $currencyId = $this->safe_string($transaction, 1);
             $code = $this->safe_currency_code($currencyId, $currency);
+            $networkId = $this->safe_string($transaction, 2);
+            $network = $this->safe_network($networkId);
             $timestamp = $this->safe_integer($transaction, 5);
             $updated = $this->safe_integer($transaction, 6);
             $status = $this->parse_transaction_status($this->safe_string($transaction, 9));
-            $amount = $this->safe_number($transaction, 12);
-            if ($amount !== null) {
-                if ($amount < 0) {
+            $signedAmount = $this->safe_string($transaction, 12);
+            $amount = Precise::string_abs($signedAmount);
+            if ($signedAmount !== null) {
+                if (Precise::string_lt($signedAmount, '0')) {
                     $type = 'withdrawal';
                 } else {
                     $type = 'deposit';
                 }
             }
-            $feeCost = $this->safe_number($transaction, 13);
+            $feeCost = $this->safe_string($transaction, 13);
             if ($feeCost !== null) {
-                $feeCost = -$feeCost;
+                $feeCost = Precise::string_abs($feeCost);
             }
             $addressTo = $this->safe_string($transaction, 16);
             $txid = $this->safe_string($transaction, 20);
+            $comment = $this->safe_string($transaction, 21);
         }
         return array(
             'info' => $transaction,
             'id' => $id,
             'txid' => $txid,
+            'type' => $type,
+            'currency' => $code,
+            'network' => $network,
+            'amount' => $this->parse_number($amount),
+            'status' => $status,
             'timestamp' => $timestamp,
             'datetime' => $this->iso8601($timestamp),
-            'network' => null,
-            'addressFrom' => null,
             'address' => $addressTo, // this is actually the $tag for XRP transfers (the address is missing)
+            'addressFrom' => null,
             'addressTo' => $addressTo,
-            'tagFrom' => null,
             'tag' => $tag, // refix it properly for the $tag from description
+            'tagFrom' => null,
             'tagTo' => $tag,
-            'type' => $type,
-            'amount' => $amount,
-            'currency' => $code,
-            'status' => $status,
             'updated' => $updated,
+            'comment' => $comment,
             'fee' => array(
                 'currency' => $code,
-                'cost' => $feeCost,
+                'cost' => $this->parse_number($feeCost),
                 'rate' => null,
             ),
         );
